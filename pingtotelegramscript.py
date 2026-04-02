@@ -87,6 +87,11 @@ def check_website_in_russia(domain):
         network = probe.get("probe", {}).get("network", "Unknown")
 
         probe_result = probe.get("result", {})
+        timings = probe_result.get("timings", {})
+        total_time = timings.get("total") or 0
+
+        speed = classify_speed(total_time)       
+        
         status_code = probe_result.get("statusCode")
 
         if status_code:
@@ -116,12 +121,21 @@ def check_website_in_russia(domain):
             )
 
     # summary
+    slow_count = sum(
+       1 for probe in results
+       if (probe.get("result", {}).get("timings", {}).get("total") or 0) > 3000
+       )
     message_lines.append("\n---")
     message_lines.append(f"✔️ Success: {success_count}/{len(results)}")
 
     # send final message
     final_message = "\n".join(message_lines)
-    send_telegram(final_message)
+    if success_count == 0:
+       send_telegram("🚫 Website DOWN in Russia")
+    elif slow_count >= len(results) // 2:
+       send_telegram("🐢 Website is VERY SLOW in Russia")
+    else:
+       send_telegram(final_message)
 
 
 if __name__ == "__main__":

@@ -18,6 +18,17 @@ def send_telegram(message):
     except Exception as e:
         print(f"Failed to send Telegram message: {e}")
 
+def classify_speed(ms):
+    if ms is None:
+        return "❓ unknown"
+    elif ms < 800:
+        return "⚡ fast"
+    elif ms < 2000:
+        return "🟢 ok"
+    elif ms < 4000:
+        return "⚠️ slow"
+    else:
+        return "🐢 very slow"
 
 def check_website_in_russia(domain):
     message_lines = []
@@ -79,15 +90,23 @@ def check_website_in_russia(domain):
         status_code = probe_result.get("statusCode")
 
         if status_code:
-            if 200 <= status_code < 400:
-                status = "✅ OK"
-                success_count += 1
-            else:
-                status = "❌ ERROR"
+           speed = classify_speed(total_time)
 
-            message_lines.append(
-                f"📍 *{location}* ({network})\n"
-                f"   HTTP {status_code} → {status}"
+           if total_time:
+              time_str = f"{total_time} ms"
+           else:
+              time_str = "no data"
+
+           if 200 <= status_code < 400:
+              status = "✅ OK"
+              success_count += 1
+           else:
+              status = "❌ ERROR"
+
+           message_lines.append(
+              f"📍 *{location}* ({network})\n"
+              f"   HTTP {status_code} → {status}\n"
+              f"   ⏱ {time_str} → {speed}"
             )
         else:
             error_msg = probe_result.get("error", "Connection failed")

@@ -5,6 +5,32 @@ import os
 # 🔐 Use environment variables in production
 BOT_TOKEN = os.getenv("BOT_TOKEN") or "YOUR_BOT_TOKEN"
 CHAT_ID = os.getenv("CHAT_ID") or "YOUR_CHAT_ID"
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+
+def save_probe(probe, domain):
+    url = f"{SUPABASE_URL}/rest/v1/probe_results"
+
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    probe_info = probe.get("probe", {})
+    result = probe.get("result", {})
+
+    data = {
+        "domain": domain,
+        "country": probe_info.get("country"),
+        "city": probe_info.get("city"),
+        "network": probe_info.get("network"),
+        "response_time": result.get("timings", {}).get("total") or 0,
+        "status_code": result.get("statusCode")
+    }
+
+    requests.post(url, json=data, headers=headers)
 
 def send_telegram(message):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
@@ -83,6 +109,7 @@ def check_website_in_russia(domain):
     success_count = 0
 
     for probe in results:
+        save_probe(probe, domain)
         location = probe.get("probe", {}).get("city", "Unknown")
         network = probe.get("probe", {}).get("network", "Unknown")
 
@@ -119,6 +146,8 @@ def check_website_in_russia(domain):
                 f"📍 *{location}* ({network})\n"
                 f"   ❌ {error_msg}"
             )
+
+    
 
     # summary
     slow_count = sum(

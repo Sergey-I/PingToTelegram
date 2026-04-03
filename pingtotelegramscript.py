@@ -8,6 +8,57 @@ CHAT_ID = os.getenv("CHAT_ID") or "YOUR_CHAT_ID"
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
+def get_updates():
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates"
+    res = requests.get(url).json()
+    return res.get("result", [])
+
+def get_latest_status(domain):
+    url = f"{SUPABASE_URL}/rest/v1/checks?domain=eq.{domain}&order=created_at.desc&limit=1"
+
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}"
+    }
+
+    res = requests.get(url, headers=headers).json()
+
+    if not res:
+        return "No data yet"
+
+    row = res[0]
+
+    return (
+        f"🌍 {domain}\n"
+        f"⏱ Avg: {row['avg_time']} ms\n"
+        f"✔️ Success: {row['success_count']}/{row['total_probes']}"
+    )
+
+def handle_commands():
+    updates = get_updates()
+
+    for update in updates:
+        message = update.get("message", {})
+        chat_id = message.get("chat", {}).get("id")
+        text = message.get("text", "")
+
+        if not chat_id:
+            continue
+
+        if text == "/start":
+            send_telegram_to(chat_id, "👋 Welcome! Use /status")
+
+        elif text == "/status":
+            msg = get_latest_status("www.internetaddicts.ru")
+            send_telegram_to(chat_id, msg)
+
+def send_telegram_to(chat_id, message):
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+    data = {
+        "chat_id": chat_id,
+        "text": message
+    }
+    requests.post(url, data=data)
 
 def save_probe(probe, domain):
     url = f"{SUPABASE_URL}/rest/v1/probe_results"
@@ -167,5 +218,6 @@ def check_website_in_russia(domain):
        send_telegram(final_message)
 
 
+handle_commands()
 if __name__ == "__main__":
     check_website_in_russia("www.internetaddicts.ru")

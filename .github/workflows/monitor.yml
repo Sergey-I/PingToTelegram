@@ -2,6 +2,10 @@ name: Website Monitor
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+  CHAT_ID: ${{ secrets.CHAT_ID }}
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
 
 on:
   schedule:

@@ -83,6 +83,28 @@ def save_probe(probe, domain):
 
     requests.post(url, json=data, headers=headers)
 
+def save_to_db(domain, avg_time, success, total):
+    url = f"{SUPABASE_URL}/rest/v1/checks"
+
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json",
+        "Prefer": "return=minimal"
+    }
+
+    data = {
+        "domain": domain,
+        "avg_time": int(avg_time),
+        "success_count": success,
+        "total_probes": total
+    }
+
+    response = requests.post(url, json=data, headers=headers)
+
+    if response.status_code not in (200, 201):
+        print("DB ERROR:", response.text)
+
 def send_telegram(message):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     data = {
@@ -197,8 +219,8 @@ def check_website_in_russia(domain):
                 f"📍 *{location}* ({network})\n"
                 f"   ❌ {error_msg}"
             )
-
     
+    save_to_db(domain, avg_time, success_count, len(results))
 
     # summary
     slow_count = sum(
@@ -207,6 +229,8 @@ def check_website_in_russia(domain):
        )
     message_lines.append("\n---")
     message_lines.append(f"✔️ Success: {success_count}/{len(results)}")
+    
+
 
     # send final message
     final_message = "\n".join(message_lines)

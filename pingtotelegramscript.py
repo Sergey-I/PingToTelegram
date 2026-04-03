@@ -51,6 +51,38 @@ def handle_commands():
         elif text == "/status":
             msg = get_latest_status("www.internetaddicts.ru")
             send_telegram_to(chat_id, msg)
+        save_user(chat_id)    
+            
+def save_user(chat_id):
+    url = f"{SUPABASE_URL}/rest/v1/users"
+
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates"
+    }
+
+    data = {"chat_id": chat_id}
+
+    requests.post(url, json=data, headers=headers)
+
+def get_all_users():
+    url = f"{SUPABASE_URL}/rest/v1/users?select=chat_id"
+
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}"
+    }
+
+    res = requests.get(url, headers=headers).json()
+    return [u["chat_id"] for u in res]
+
+def broadcast(message):
+    users = get_all_users()
+
+    for chat_id in users:
+        send_telegram_to(chat_id, message)
 
 def send_telegram_to(chat_id, message):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
@@ -248,7 +280,7 @@ def check_website_in_russia(domain):
     elif slow_count >= len(results) // 2:
        send_telegram("🐢 Website is VERY SLOW in Russia")
     else:
-       send_telegram(final_message)
+       broadcast(final_message)
 
 
 handle_commands()

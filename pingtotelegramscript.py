@@ -219,6 +219,15 @@ def check_website_in_russia(domain):
                 f"📍 *{location}* ({network})\n"
                 f"   ❌ {error_msg}"
             )
+
+    times = [
+    probe.get("result", {}).get("timings", {}).get("total") or 0
+    for probe in results
+    ]
+
+    valid_times = [t for t in times if t > 0]
+
+    avg_time = int(sum(valid_times) / len(valid_times)) if valid_times else 0
     
     save_to_db(domain, avg_time, success_count, len(results))
 

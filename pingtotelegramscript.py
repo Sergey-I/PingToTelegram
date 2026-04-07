@@ -115,7 +115,7 @@ def save_probe(probe, domain):
 
     requests.post(url, json=data, headers=headers)
 
-def save_to_db(domain, avg_time, success, total):
+def save_to_db(domain, avg_time, success, total, region):
     url = f"{SUPABASE_URL}/rest/v1/checks"
 
     headers = {
@@ -129,7 +129,8 @@ def save_to_db(domain, avg_time, success, total):
         "domain": domain,
         "avg_time": int(avg_time),
         "success_count": success,
-        "total_probes": total
+        "total_probes": total,
+        "region": region
     }
 
     response = requests.post(url, json=data, headers=headers)
@@ -160,6 +161,25 @@ def classify_speed(ms):
         return "⚠️ slow"
     else:
         return "🐢 very slow"
+
+def calculate_stats(probes):
+    success = 0
+    times = []
+
+    for probe in probes:
+        result = probe.get("result", {})
+        status_code = result.get("statusCode")
+        total_time = result.get("timings", {}).get("total") or 0
+
+        if total_time > 0:
+            times.append(total_time)
+
+        if status_code and 200 <= status_code < 400:
+            success += 1
+
+    avg_time = int(sum(times) / len(times)) if times else 0
+
+    return avg_time, success, len(probes)
 
 def check_website_in_russia(domain):
     message_lines = []
@@ -252,17 +272,24 @@ def check_website_in_russia(domain):
                 f"   ❌ {error_msg}"
             )
 
-    times = [
-    probe.get("result", {}).get("timings", {}).get("total") or 0
-    for probe in results
-    ]
+    ru_probes = []
+    not_ru_probes = []
 
-    valid_times = [t for t in times if t > 0]
-
-    avg_time = int(sum(valid_times) / len(valid_times)) if valid_times else 0
+    for probe in results:
+        country = probe.get("probe", {}).get("country")
+        if country == "RU":
+            ru_probes.append(probe)
+        else:
+            not_ru_probes.append(probe)
     
-    save_to_db(domain, avg_time, success_count, len(results))
+    # RU stats
+    ru_avg, ru_success, ru_total = calculate_stats(ru_probes)
+    save_to_db(domain, ru_avg, ru_success, ru_total, region="ru")
 
+    # NOT RU stats
+    not_ru_avg, not_ru_success, not_ru_total = calculate_stats(not_ru_probes)
+    save_to_db(domain, not_ru_avg, not_ru_success, not_ru_total, region="not_ru") 
+  
     # summary
     slow_count = sum(
        1 for probe in results

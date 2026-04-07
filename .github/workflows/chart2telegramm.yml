@@ -16,7 +16,7 @@ jobs:
         run: pip install requests pandas matplotlib
 
       - name: Run script
-        run: python generate_and_send_chart.py
+        run: python ChartToTelegram.py
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}

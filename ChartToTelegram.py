@@ -16,16 +16,27 @@ SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 # -------------------------
 def fetch_data(domain):
     since = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
-   
-    url = f"{SUPABASE_URL}/rest/v1/checks?domain=eq.{domain}&created_at=gte.{since}&select=created_at,avg_time,region&order=created_at.asc"
+
+    url = f"{SUPABASE_URL}/rest/v1/checks"
+
+    params = {
+        "domain": f"eq.{domain}",
+        "created_at": f"gte.{since}",
+        "select": "created_at,avg_time,region",
+        "order": "created_at.asc"
+    }
 
     headers = {
         "apikey": SUPABASE_KEY,
         "Authorization": f"Bearer {SUPABASE_KEY}"
     }
 
-    res = requests.get(url, headers=headers)
-    res.raise_for_status()
+    res = requests.get(url, headers=headers, params=params)
+
+    if res.status_code != 200:
+        print("ERROR:", res.status_code, res.text)
+        raise Exception("Supabase request failed")
+
     return res.json()
 
 # -------------------------

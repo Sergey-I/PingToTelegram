@@ -17,12 +17,7 @@ SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 def fetch_data(domain):
    since = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
 
-    url = ( f"{SUPABASE_URL}/rest/v1/checks"
-        f"?domain=eq.{domain}"
-        f"&created_at=gte.{since}"
-        f"&select=created_at,avg_time,region"
-        f"&order=created_at.asc"
-    )
+    url = f"{SUPABASE_URL}/rest/v1/checks?domain=eq.{domain}&created_at=gte.{since}&select=created_at,avgtime,region&order=created_at.asc"
 
     headers = {
         "apikey": SUPABASE_KEY,

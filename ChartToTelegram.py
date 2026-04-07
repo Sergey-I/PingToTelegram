@@ -1,7 +1,10 @@
 import requests
 import pandas as pd
 import matplotlib.pyplot as plt
-from datetime import datetime, timedelta
+import os
+from datetime import datetime, timedelta, timezone
+
+
 
 BOT_TOKEN = os.getenv("BOT_TOKEN") or "YOUR_BOT_TOKEN"
 CHAT_ID = os.getenv("CHAT_ID") or "YOUR_CHAT_ID"
@@ -12,7 +15,7 @@ SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 # Fetch data
 # -------------------------
 def fetch_data(domain):
-    since = (datetime.utcnow() - timedelta(days=7)).isoformat()
+   since = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
 
     url = (
         f"{SUPABASE_URL}/rest/v1/checks"
